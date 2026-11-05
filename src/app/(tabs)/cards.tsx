@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, TextInput, FlatList, Alert, Pressable } from 'react-native';
+import { View, Text, TextInput, FlatList, Alert, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { listCards, removeCard, syncAll } from '../../lib/db';
@@ -46,6 +46,7 @@ export default function MyCards() {
     ]);
   }
 
+  const pending = cards.filter((c) => !c.synced).length;
   const text = q.trim().toLowerCase();
   const shown = text ? cards.filter((c) => c.title.toLowerCase().includes(text) || c.message.toLowerCase().includes(text)) : cards;
 
@@ -53,7 +54,15 @@ export default function MyCards() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="My Cards" right={<Btn small kind="soft" label={syncing ? 'Syncing' : 'Sync'} onPress={sync} loading={syncing} />} />
+      <Header
+        title="My Cards"
+        right={
+          // status pill: cards sync by themselves; tap it to sync right now
+          <Pressable onPress={sync} disabled={syncing} style={{ paddingHorizontal: 12, height: 36, borderRadius: 18, backgroundColor: pending === 0 ? '#E3F5EC' : '#FFF1D6', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
+            {syncing ? <ActivityIndicator size="small" color={C.primary} /> : <Text style={{ fontWeight: '700', fontSize: 13, color: pending === 0 ? C.ok : '#9A6A00' }}>{pending === 0 ? '☁️ Synced' : `⏳ ${pending} waiting`}</Text>}
+          </Pressable>
+        }
+      />
 
       <View style={{ paddingHorizontal: 16 }}>
         <TextInput

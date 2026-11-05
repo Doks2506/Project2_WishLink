@@ -22,23 +22,33 @@ type Props = {
     style?: CardStyle; // or a ready style object (used live in the editor)
   };
   frame: number; // 0 .. FRAMES-1  (the card is drawn differently for each frame)
+  onItemLayout?: (id: string, w: number, h: number) => void; // the editor uses this to know the size of each box
 };
 
-export default function CardView({ card, frame }: Props) {
+export default function CardView({ card, frame, onItemLayout }: Props) {
   const st = card.style ?? parseStyle(card.extra);
   const t = (frame / FRAMES) * Math.PI * 2;
   const bounce = Math.sin(t) * 8;
   const step = CARD_H / FRAMES; // moves exactly one card-height per loop = seamless
-  // text colour: the user's choice, or automatic (white on a photo or dark colour)
+  // automatic text colour: white on a photo or a dark colour
   const ink = st.color || (card.image || isDark(card.bg) ? '#FFFFFF' : '#2B2340');
   const family = fontFamily(st.font);
   const justify = st.pos === 'top' ? 'flex-start' : st.pos === 'bottom' ? 'flex-end' : 'center';
+  const movable = Array.isArray(st.items); // new cards: every text and sticker is its own box
 
   return (
     <View collapsable={false} style={{ width: CARD_W, height: CARD_H, backgroundColor: card.bg, borderRadius: 20, overflow: 'hidden' }}>
       {/* background photo + dark layer */}
       {!!card.image && <Image source={{ uri: card.image }} style={{ position: 'absolute', left: 0, top: 0, width: CARD_W, height: CARD_H }} resizeMode="cover" />}
       {!!card.image && st.scrim > 0 && <View style={{ position: 'absolute', left: 0, top: 0, width: CARD_W, height: CARD_H, backgroundColor: '#000', opacity: st.scrim }} />}
+
+      {/* decorative frame */}
+      {st.frame !== 'none' && (
+        <View pointerEvents="none" style={{ position: 'absolute', left: 10, top: 10, width: CARD_W - 20, height: CARD_H - 20, borderRadius: 14, borderWidth: 2, borderColor: ink, opacity: 0.55 }} />
+      )}
+      {st.frame === 'double' && (
+        <View pointerEvents="none" style={{ position: 'absolute', left: 17, top: 17, width: CARD_W - 34, height: CARD_H - 34, borderRadius: 9, borderWidth: 1, borderColor: ink, opacity: 0.45 }} />
+      )}
 
       {card.effect === 'sparkle' &&
         SPOTS.map(([x, y], i) => (
@@ -75,18 +85,51 @@ export default function CardView({ card, frame }: Props) {
           </View>
         ))}
 
-      {/* sticker + title + message. justifyContent = where the text sits (top / middle / bottom) */}
-      <View style={{ position: 'absolute', left: 0, top: 0, width: CARD_W, height: CARD_H, padding: 24, justifyContent: justify }}>
-        {!!card.sticker && (
-          <Text style={{ fontSize: 70, textAlign: st.align, transform: [{ translateY: bounce }] }}>{card.sticker}</Text>
-        )}
-        <Text style={{ fontSize: st.tSize, lineHeight: st.tSize * 1.35, fontWeight: st.bold ? '800' : '400', fontStyle: st.italic ? 'italic' : 'normal', fontFamily: family, color: ink, textAlign: st.align, marginTop: 8 }}>
-          {card.title || 'Your title'}
-        </Text>
-        <Text style={{ fontSize: st.mSize, lineHeight: st.mSize * 1.6, fontStyle: st.italic ? 'italic' : 'normal', fontFamily: family, color: ink, textAlign: st.align, marginTop: 8 }}>
-          {card.message || 'Your message goes here'}
-        </Text>
-      </View>
+      {movable ? (
+        // NEW cards: each box sits at its own x, y
+        st.items!.map((it) =>
+          it.kind === 'sticker' ? (
+            <View
+              key={it.id}
+              onLayout={(e) => onItemLayout?.(it.id, e.nativeEvent.layout.width, e.nativeEvent.layout.height)}
+              style={{ position: 'absolute', left: it.x, top: it.y }}
+            >
+              <Text style={{ fontSize: it.size, lineHeight: it.size * 1.25, transform: [{ translateY: bounce * (it.size / 60) }] }}>{it.emoji}</Text>
+            </View>
+          ) : (
+            <View
+              key={it.id}
+              onLayout={(e) => onItemLayout?.(it.id, e.nativeEvent.layout.width, e.nativeEvent.layout.height)}
+              style={{ position: 'absolute', left: it.x, top: it.y, width: it.w ?? 240 }}
+            >
+              <Text
+                style={{
+                  fontSize: it.size,
+                  lineHeight: it.size * (it.size >= 26 ? 1.3 : 1.55), // a little more room for small text and Dzongkha
+                  fontWeight: it.bold ? '800' : '400',
+                  fontStyle: it.italic ? 'italic' : 'normal',
+                  fontFamily: fontFamily(it.font),
+                  color: it.color || ink,
+                  textAlign: it.align ?? 'center',
+                }}
+              >
+                {it.text}
+              </Text>
+            </View>
+          )
+        )
+      ) : (
+        // OLD cards (made before movable boxes): the original layout
+        <View style={{ position: 'absolute', left: 0, top: 0, width: CARD_W, height: CARD_H, padding: 24, justifyContent: justify }}>
+          {!!card.sticker && <Text style={{ fontSize: 70, textAlign: st.align, transform: [{ translateY: bounce }] }}>{card.sticker}</Text>}
+          <Text style={{ fontSize: st.tSize, lineHeight: st.tSize * 1.35, fontWeight: st.bold ? '800' : '400', fontStyle: st.italic ? 'italic' : 'normal', fontFamily: family, color: ink, textAlign: st.align, marginTop: 8 }}>
+            {card.title || 'Your title'}
+          </Text>
+          <Text style={{ fontSize: st.mSize, lineHeight: st.mSize * 1.6, fontStyle: st.italic ? 'italic' : 'normal', fontFamily: family, color: ink, textAlign: st.align, marginTop: 8 }}>
+            {card.message || 'Your message goes here'}
+          </Text>
+        </View>
+      )}
 
       {/* the user's drawing, on top of everything */}
       {st.strokes.length > 0 && (
@@ -101,12 +144,12 @@ export default function CardView({ card, frame }: Props) {
 }
 
 // Smaller copy of the card (for the list and the editor preview).
-export function ScaledCard({ card, frame, width }: Props & { width: number }) {
+export function ScaledCard({ card, frame, width, onItemLayout }: Props & { width: number }) {
   const s = width / CARD_W;
   return (
     <View style={{ width, height: CARD_H * s, overflow: 'hidden', borderRadius: 20 * s }}>
       <View style={{ position: 'absolute', left: -(CARD_W * (1 - s)) / 2, top: -(CARD_H * (1 - s)) / 2, transform: [{ scale: s }] }}>
-        <CardView card={card} frame={frame} />
+        <CardView card={card} frame={frame} onItemLayout={onItemLayout} />
       </View>
     </View>
   );
