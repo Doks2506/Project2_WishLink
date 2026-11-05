@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../lib/auth';
+import { listCards } from '../../lib/db';
+import { Card } from '../../lib/types';
+import { ScaledCard } from '../../components/CardView';
 import { PRESETS, PRESET_KEYS, BHUTAN_KEYS, MORE_KEYS } from '../../lib/presets';
 import { isDark } from '../../lib/color';
 import { Btn } from '../../components/Btn';
@@ -12,7 +15,9 @@ import { C, shadow } from '../../lib/theme';
 // A tile opens the editor with a preset.
 export default function Home() {
   const { session } = useAuth();
-  const name = (session!.user.email ?? '').split('@')[0];
+  const name = (session!.user.user_metadata?.name as string) || (session!.user.email ?? '').split('@')[0];
+  const [recent, setRecent] = useState<Card[]>([]);
+  useFocusEffect(useCallback(() => { listCards(session!.user.id).then((c) => setRecent(c.slice(0, 8))); }, [session]));
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [q, setQ] = useState('');
@@ -30,7 +35,7 @@ export default function Home() {
       <Header title={`Hi ${name}`} />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 24 }}>
         <TextInput
-          style={{ height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: C.border, backgroundColor: '#fff', paddingHorizontal: 16, fontSize: 16, color: C.text, marginBottom: 18 }}
+          style={{ height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.card, paddingHorizontal: 16, fontSize: 16, color: C.text, marginBottom: 18 }}
           placeholder="🔍  Search occasions"
           placeholderTextColor={C.muted}
           value={q}
@@ -42,6 +47,20 @@ export default function Home() {
           <View style={{ flex: 1 }}><Btn full label="＋  New card" onPress={() => router.push('/editor')} /></View>
           <View style={{ flex: 1 }}><Btn full kind="soft" label="📷  Scan QR" onPress={() => router.push('/scan')} /></View>
         </View>
+
+        {/* your latest cards */}
+        {recent.length > 0 && !q && (
+          <View style={{ marginBottom: 22 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: C.text, marginBottom: 12 }}>Recent cards</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 8 }}>
+              {recent.map((c) => (
+                <Pressable key={c.id} onPress={() => router.push({ pathname: '/editor', params: { id: c.id } })} style={[{ borderRadius: 16 }, shadow]}>
+                  <ScaledCard card={c} frame={3} width={96} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {keys.length > 0 && <Text style={{ fontSize: 18, fontWeight: '800', color: C.text, marginBottom: 12 }}>Choose an occasion</Text>}
 
@@ -71,7 +90,7 @@ export default function Home() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 8 }}>
               {bhutan.map((k) => {
                 const p = PRESETS[k];
-                const ink = isDark(p.bg) ? '#FFFFFF' : C.text;
+                const ink = isDark(p.bg) ? '#FFFFFF' : '#2B2340';
                 return (
                   <Pressable
                     key={k}

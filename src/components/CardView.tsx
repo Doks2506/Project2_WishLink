@@ -34,6 +34,8 @@ export default function CardView({ card, frame, onItemLayout }: Props) {
   const ink = st.color || (card.image || isDark(card.bg) ? '#FFFFFF' : '#2B2340');
   const family = fontFamily(st.font);
   const justify = st.pos === 'top' ? 'flex-start' : st.pos === 'bottom' ? 'flex-end' : 'center';
+  // text fade-in: the writing starts faint and becomes clear during the first half of the loop
+  const fade = card.effect === 'fade' ? (frame < 5 ? 0.1 + (0.9 * frame) / 4 : 1) : 1;
   const movable = Array.isArray(st.items); // new cards: every text and sticker is its own box
 
   return (
@@ -100,7 +102,7 @@ export default function CardView({ card, frame, onItemLayout }: Props) {
             <View
               key={it.id}
               onLayout={(e) => onItemLayout?.(it.id, e.nativeEvent.layout.width, e.nativeEvent.layout.height)}
-              style={{ position: 'absolute', left: it.x, top: it.y, width: it.w ?? 240 }}
+              style={{ position: 'absolute', left: it.x, top: it.y, width: it.w ?? 240, opacity: fade }}
             >
               <Text
                 style={{
@@ -120,7 +122,7 @@ export default function CardView({ card, frame, onItemLayout }: Props) {
         )
       ) : (
         // OLD cards (made before movable boxes): the original layout
-        <View style={{ position: 'absolute', left: 0, top: 0, width: CARD_W, height: CARD_H, padding: 24, justifyContent: justify }}>
+        <View style={{ position: 'absolute', left: 0, top: 0, width: CARD_W, height: CARD_H, padding: 24, justifyContent: justify, opacity: fade }}>
           {!!card.sticker && <Text style={{ fontSize: 70, textAlign: st.align, transform: [{ translateY: bounce }] }}>{card.sticker}</Text>}
           <Text style={{ fontSize: st.tSize, lineHeight: st.tSize * 1.35, fontWeight: st.bold ? '800' : '400', fontStyle: st.italic ? 'italic' : 'normal', fontFamily: family, color: ink, textAlign: st.align, marginTop: 8 }}>
             {card.title || 'Your title'}

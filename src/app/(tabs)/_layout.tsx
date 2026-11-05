@@ -2,6 +2,8 @@ import { Text } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from '../../lib/theme';
+import { useAuth } from '../../lib/auth';
+import { useAutoSync } from '../../lib/useAutoSync';
 
 const icon = (emoji: string) => ({ focused }: { focused: boolean }) => (
   <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
@@ -10,6 +12,8 @@ const icon = (emoji: string) => ({ focused }: { focused: boolean }) => (
 // The bottom navigation bar: Home, My Cards, Profile.
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { session } = useAuth();
+  useAutoSync(session?.user.id); // sync when internet comes back
   return (
     <Tabs
       screenOptions={{

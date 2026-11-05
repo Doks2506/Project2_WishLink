@@ -75,7 +75,7 @@ export default function Login() {
     setBusy(false);
   }
 
-  const input = { borderWidth: 1.5, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, height: 50, backgroundColor: '#fff', color: C.text, fontSize: 16 } as const;
+  const input = { borderWidth: 1.5, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, height: 50, backgroundColor: C.card, color: C.text, fontSize: 16 } as const;
   const tab = (on: boolean) => ({ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: on ? C.primary : 'transparent' }) as const;
   const label = { fontWeight: '600', color: C.text, marginBottom: 6 } as const;
 

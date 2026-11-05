@@ -14,7 +14,7 @@ import { Btn } from '../components/Btn';
 import { Header } from '../components/Header';
 import { C, shadow } from '../lib/theme';
 
-const EFFECT_LABEL: Record<string, string> = { sparkle: '✨ Sparkle', hearts: '❤️ Hearts', confetti: '🎊 Confetti', flags: '🏳️ Prayer flags', none: '🚫 None' };
+const EFFECT_LABEL: Record<string, string> = { sparkle: '✨ Sparkle', hearts: '❤️ Hearts', confetti: '🎊 Confetti', flags: '🏳️ Prayer flags', fade: '🔤 Text fade-in', none: '🚫 None' };
 
 type Tool = 'text' | 'bg' | 'sticker' | 'draw' | 'animate';
 const TOOLS: { key: Tool; icon: string; label: string }[] = [
@@ -249,7 +249,7 @@ export default function Editor() {
     router.replace('/cards');
   }
 
-  const input = { borderWidth: 1.5, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#fff', color: C.text, fontSize: 16 } as const;
+  const input = { borderWidth: 1.5, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, backgroundColor: C.card, color: C.text, fontSize: 16 } as const;
   const shown: CardStyle = { ...style, items, strokes: live ? [...style.strokes, live] : style.strokes };
   const fallback = (it: Item) => sizes[it.id] ?? { w: it.w ?? it.size * 1.3, h: it.size * 1.4 };
 
@@ -369,7 +369,7 @@ export default function Editor() {
               <Text style={{ fontWeight: '800', color: C.text, marginBottom: 8 }}>Tap an emoji to add it to the card</Text>
               <Row>
                 {STICKERS.map((s) => (
-                  <Pressable key={s} onPress={() => addSticker(s)} style={{ width: 54, height: 54, borderRadius: 14, backgroundColor: '#fff', borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}>
+                  <Pressable key={s} onPress={() => addSticker(s)} style={{ width: 54, height: 54, borderRadius: 14, backgroundColor: C.card, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontSize: 28 }}>{s}</Text>
                   </Pressable>
                 ))}

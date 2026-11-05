@@ -66,7 +66,7 @@ export default function MyCards() {
 
       <View style={{ paddingHorizontal: 16 }}>
         <TextInput
-          style={{ height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: C.border, backgroundColor: '#fff', paddingHorizontal: 16, fontSize: 16, color: C.text }}
+          style={{ height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.card, paddingHorizontal: 16, fontSize: 16, color: C.text }}
           placeholder="🔍  Search my cards"
           placeholderTextColor={C.muted}
           value={q}

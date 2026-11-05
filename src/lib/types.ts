@@ -18,5 +18,5 @@ export type Card = {
 export const BG_COLORS = ['#FFE4EC', '#E6F0FF', '#E8FFE6', '#FFF6D6', '#EAD9FF', '#FFD9C7', '#FFC94D', '#F28C28', '#8B1E2D', '#FFFFFF', '#2B2340'];
 export const STICKERS = ['🎂', '🎉', '💌', '🌸', '🎁', '🏔️', '🙏', '🐉', '🏯', '🌈', '🏆', '💐'];
 // 'flags' = Bhutanese prayer flags (lungta) fluttering at the top and bottom
-export const EFFECTS = ['sparkle', 'hearts', 'confetti', 'flags', 'none'];
+export const EFFECTS = ['sparkle', 'hearts', 'confetti', 'flags', 'fade', 'none'];
 export const FRAMES = 10; // frames in one animation loop (also used for the GIF)

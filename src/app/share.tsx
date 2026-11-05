@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
+import * as Clipboard from 'expo-clipboard';
+import { File } from 'expo-file-system';
 import { saveToGallery } from '../lib/media';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../lib/auth';
@@ -32,6 +34,7 @@ export default function SharePage() {
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [gifUri, setGifUri] = useState<string | null>(null);
+  const [gifInfo, setGifInfo] = useState(''); // e.g. "0.42 MB, 1.5 seconds"
   const [link, setLink] = useState<string | null>(null);
   const [linkBusy, setLinkBusy] = useState(false);
   const cardRef = useRef<View>(null);
@@ -80,7 +83,12 @@ export default function SharePage() {
     setExporting(true);
     setProgress(0);
     try {
-      setGifUri(await exportGif(cardRef, setFrame, setProgress));
+      const uri = await exportGif(cardRef, setFrame, setProgress);
+      setGifUri(uri);
+      try {
+        const bytes = new File(uri).size; // the proposal asks for a GIF under 5 MB and up to 3 seconds
+        setGifInfo(bytes ? `${(bytes / 1048576).toFixed(2)} MB, ${(FRAMES * 0.15).toFixed(1)} seconds` : '');
+      } catch {}
     } catch (e: any) {
       Alert.alert('GIF failed', String(e?.message ?? e));
     }
@@ -131,7 +139,7 @@ export default function SharePage() {
       <Header title="Share & Download" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ padding: 16, alignItems: 'center', paddingBottom: insets.bottom + 40 }}>
         {/* 1. QR code at the top */}
-        <View style={[{ backgroundColor: '#fff', borderRadius: 22, padding: 18, alignItems: 'center', alignSelf: 'stretch', marginBottom: 16 }, shadow]}>
+        <View style={[{ backgroundColor: C.card, borderRadius: 22, padding: 18, alignItems: 'center', alignSelf: 'stretch', marginBottom: 16 }, shadow]}>
           {link ? (
             <>
               <View ref={qrRef} collapsable={false} style={{ backgroundColor: '#fff', padding: 10 }}>
@@ -155,6 +163,7 @@ export default function SharePage() {
             </View>
           )}
           <Btn full label={exporting ? `Making GIF... ${Math.round(progress * 100)}%` : gifUri ? 'Create GIF again' : 'Download GIF'} onPress={makeGif} disabled={exporting} />
+          {!!gifUri && !!gifInfo && <Text style={{ color: C.muted, textAlign: 'center', marginTop: 8 }}>GIF ready: {gifInfo}</Text>}
           {gifUri && <Btn full kind="soft" label="Save GIF to gallery" onPress={async () => told(await saveToGallery(gifUri), 'The GIF')} style={{ marginTop: 10 }} />}
           {gifUri && <Btn full kind="soft" label="Share GIF (WhatsApp, etc.)" onPress={shareGif} style={{ marginTop: 10 }} />}
 
@@ -171,6 +180,7 @@ export default function SharePage() {
             style={{ marginTop: 10 }}
           />
           {/* test button: opens the link in this phone's browser, so you can see if the viewer page works */}
+          {link && <Btn full kind="soft" label="Copy link" onPress={async () => { await Clipboard.setStringAsync(link); Alert.alert('Copied', 'The link is copied. Paste it in any chat.'); }} style={{ marginTop: 10 }} />}
           {link && <Btn full kind="soft" label="Save QR code as image" onPress={saveQr} style={{ marginTop: 10 }} />}
           {link && <Btn full kind="soft" label="Test: open link in browser" onPress={() => Linking.openURL(link)} style={{ marginTop: 10 }} />}
         </View>
